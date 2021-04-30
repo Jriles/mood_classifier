@@ -1,0 +1,12 @@
+<h1>Hello World</h1>
+<form action="/core/" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div>
+    <label for="input_file">Write a bit about how you feel today!<br> We'll let you know what we think your mood is.</label>
+
+  </div>
+  <textarea name="input_text" placeholder="Your sentence here..." rows="8" cols="80"></textarea>
+  <input class="btn btn-success btn-lg" type="submit" value="Submit">
+</form>
+
+<h3>{{ mood }}</h3>
