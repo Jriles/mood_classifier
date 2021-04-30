@@ -3,8 +3,6 @@ import mood_classifier
 from .helpers import *
 import transformers
 from mood_classifier_app.forms import UserEntryForm
-from mood_classifier_app.models import UserEntry
-import datetime
 
 DATA_COLUMN = 'DATA_COLUMN'
 LABEL_COLUMN = 'LABEL_COLUMN'
@@ -28,18 +26,12 @@ def index(request):
             model = TFBertForSequenceClassification.from_pretrained(MOOD_MODEL_DIR)
             tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
             mood = list(getMood(day_description, model, tokenizer))[0]
-            print(mood)
             context = {
                 'mood': LABELS[mood],
                 'user_entry_form': UserEntryForm()
             }
             # save user input for further learning or other purposes
-            date = datetime.datetime.now()
-            bar = UserEntry.objects.create(
-                user_input_text=day_description,
-                entry_date=date,
-                mood_classification=mood
-            )
+            save_user_input(day_description, mood)
     else:
         context = {
             'user_entry_form': UserEntryForm()
@@ -49,10 +41,10 @@ def index(request):
 # this is a view and a function that I made for convienvience to train the model.
 def train_model(request):
     if request.method == "POST":
+        inputed_batch_size = int(request.POST['batch_size'])
         model = TFBertForSequenceClassification.from_pretrained("bert-base-uncased")
         tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-        print('thinks we should train model.')
         #IMDB movie reviews
         dataset = get_dataset()
         #save dataset to file memory
@@ -60,11 +52,11 @@ def train_model(request):
 
         #training and testing datasets here
         train = tf.keras.preprocessing.text_dataset_from_directory(
-            'aclImdb/train', batch_size=BATCH_SIZE, validation_split=0.2,
+            'aclImdb/train', batch_size=inputed_batch_size, validation_split=0.2,
             subset='training', seed=123)
 
         test = tf.keras.preprocessing.text_dataset_from_directory(
-            'aclImdb/train', batch_size=BATCH_SIZE, validation_split=0.2,
+            'aclImdb/train', batch_size=inputed_batch_size, validation_split=0.2,
             subset='validation', seed=123)
 
         #convert to pandas dataframes
@@ -84,8 +76,6 @@ def train_model(request):
         model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=3e-5, epsilon=1e-08, clipnorm=1.0),
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=[tf.keras.metrics.SparseCategoricalAccuracy('accuracy')])
-
-        callbacks = stopAt75PercentAccurate()
 
         model.fit(train_data, epochs=2, validation_data=validation_data)
 

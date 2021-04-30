@@ -5,8 +5,17 @@ from transformers import InputExample, InputFeatures
 import tensorflow as tf
 import os
 import shutil
+from mood_classifier_app.models import UserEntry
+import datetime
 
-
+def save_user_input(day_description, mood):
+    date = datetime.datetime.now()
+    response = UserEntry.objects.create(
+        user_input_text=day_description,
+        entry_date=date,
+        mood_classification=mood
+    )
+    return response
 
 def csvColumnToList(file, column_name):
     data_frame = pd.read_csv(file, names=[column_name])
@@ -20,7 +29,6 @@ def getMood(sentence, model, tokenizer):
     label = tf.argmax(tf_predictions, axis=1)
     label = label.numpy()
     return label
-
 
 #training helpers
 def get_dataset():

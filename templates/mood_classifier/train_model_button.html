@@ -3,6 +3,10 @@
 <div class="d-flex justify-content-center text-center mt-5">
   <form action="/core/train_model_button" method="post" enctype="multipart/form-data">
     {% csrf_token %}
+    <div class="form-group">
+      <label for="batch_size">Batch Size</label>
+      <input name="batch_size" type="number" value="Batch Size">
+    </div>
     <input class="btn btn-success btn-lg" type="submit" value="Train Model">
   </form>
 </div>
