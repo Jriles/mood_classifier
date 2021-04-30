@@ -2,29 +2,48 @@ from django.shortcuts import render
 import mood_classifier
 from .helpers import *
 import transformers
-
+from mood_classifier_app.forms import UserEntryForm
+from mood_classifier_app.models import UserEntry
+import datetime
 
 DATA_COLUMN = 'DATA_COLUMN'
 LABEL_COLUMN = 'LABEL_COLUMN'
 ACCURACY_THRESHOLD = .80
-LABELS = ['Negative','Positive']
+LABELS = ["Looks like your day isn't going so well, Sorry about that :(", "Glad to hear you're having a good day!"]
 MOOD_MODEL_DIR = './models/mood_model/'
+
+#this takes forever, but the this is the suggested batch size given stanford's IMDB dataset.
+# feel free to cange for faster testing.
+BATCH_SIZE = 30000
 
 # main form view here
 def index(request):
     if request.method == "POST":
-        #guess the mood
-        from transformers import TFBertForSequenceClassification
-        #load trained model from memory so we're not training every time.
-        model = TFBertForSequenceClassification.from_pretrained(MOOD_MODEL_DIR)
-        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-        mood = list(getMood(request.POST['input_text'], model, tokenizer))[0]
-        print(mood)
-        context = {
-            'mood': LABELS[mood]
-        }
+        user_entry_form = UserEntryForm(request.POST)
+        if user_entry_form.is_valid():
+            day_description = user_entry_form.cleaned_data['user_input_text']
+            #guess the mood
+            from transformers import TFBertForSequenceClassification
+            #load trained model from memory so we're not training every time.
+            model = TFBertForSequenceClassification.from_pretrained(MOOD_MODEL_DIR)
+            tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+            mood = list(getMood(day_description, model, tokenizer))[0]
+            print(mood)
+            context = {
+                'mood': LABELS[mood],
+                'user_entry_form': UserEntryForm()
+            }
+            # save user input for further learning or other purposes
+            date = datetime.datetime.now()
+            bar = UserEntry.objects.create(
+                user_input_text=day_description,
+                entry_date=date,
+                mood_classification=mood
+            )
     else:
-        context = {}
+        context = {
+            'user_entry_form': UserEntryForm()
+        }
     return render(request, 'mood_classifier/index.html', context)
 
 # this is a view and a function that I made for convienvience to train the model.
@@ -41,11 +60,11 @@ def train_model(request):
 
         #training and testing datasets here
         train = tf.keras.preprocessing.text_dataset_from_directory(
-            'aclImdb/train', batch_size=1000, validation_split=0.2,
+            'aclImdb/train', batch_size=BATCH_SIZE, validation_split=0.2,
             subset='training', seed=123)
 
         test = tf.keras.preprocessing.text_dataset_from_directory(
-            'aclImdb/train', batch_size=1000, validation_split=0.2,
+            'aclImdb/train', batch_size=BATCH_SIZE, validation_split=0.2,
             subset='validation', seed=123)
 
         #convert to pandas dataframes
