@@ -7,7 +7,7 @@ Run `pip install -r requirements.txt` from the Django project folder.
 
 Next, you're going to want to train your model from the core/train_model_button page. Please input a batch size here. The recommended size is 30000, but that could take an extremely long time, so I recommend something more like 32 for a quick proof of concept review.
 
-After training is complete, please navigate to the /core/ url where you can find the mood classification form. The controller returns a positive or negative remark based on the user's description of their day. The controller also saves the user's input, timespamps it and saves the infered mood as an integer.
+After training is complete, please navigate to the /core/ url where you can find the mood classification form. The controller returns a positive or negative remark based on the user's description of their day. The controller also writes the user's input, timespamps it and saves the infered mood as an integer to a SQLite server. I prefer postgres generally, but from the perspective of quick setup this is a better option in my opinion.
 
 
 Please note: I would love to have included the model here but the size is over 100MB.
